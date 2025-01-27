@@ -1,0 +1,20 @@
+{
+    "dependencies": {
+        "@solana-developers/helpers": "^2.5.6",
+        "@solana/web3.js": "^1.98.0",
+        "dotenv": "^16.4.7",
+        "typescript": "^5.7.3"
+    },
+    "name": "3_read_data_from_network",
+    "version": "1.0.0",
+    "main": "index.js",
+    "type": "module",
+    "scripts": {
+        "start": "node index.js",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": ""
+}
