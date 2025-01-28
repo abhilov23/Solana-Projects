@@ -8,6 +8,12 @@ import {
 } from "@solana/wallet-adapter-react";
 import { clusterApiUrl } from "@solana/web3.js";
 
+import {
+  WalletModalProvider,
+} from "@solana/wallet-adapter-react-ui";
+
+
+
 const endpoint = clusterApiUrl("devnet");
 
 function MyApp() {
@@ -17,7 +23,9 @@ function MyApp() {
     <StrictMode>
       <ConnectionProvider endpoint={endpoint}>
         <WalletProvider wallets={wallets}>
+        <WalletModalProvider>
           <App />
+          </WalletModalProvider>
         </WalletProvider>
       </ConnectionProvider>
     </StrictMode>

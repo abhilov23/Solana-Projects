@@ -19,7 +19,7 @@ const Token_balance = () => {
 
 
   return (
-    <div className="text-white text-2xl flex justify-between ">
+    <div className="text-gray-500 text-2xl flex justify-between ">
         <p>{publicKey ? `SOL Balance:` : ""}</p>
       <p>{publicKey ? ` ${balance / LAMPORTS_PER_SOL}` : ""}</p>
     </div>
