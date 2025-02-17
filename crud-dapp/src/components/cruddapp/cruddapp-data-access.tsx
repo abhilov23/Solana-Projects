@@ -79,7 +79,9 @@ export function useCruddappProgramAccount({ account }: { account: PublicKey }) {
         programId,
       );
 
-      return program.methods.updateEntry(title, message).accounts({ journalEntry: journalEntryAddress}).rpc();
+      return program.methods.updateEntry(title, message).accounts({
+        journalEntry: journalEntryAddress
+      }).rpc();
     },
     onSuccess: (signature) => {
       transactionToast(signature)
@@ -91,7 +93,9 @@ export function useCruddappProgramAccount({ account }: { account: PublicKey }) {
 
   const deleteEntry = useMutation({
     mutationKey: ['cruddapp', 'delete', { cluster, account }],
-    mutationFn: (title: string) => program.methods.deleteEntry(title).accounts({ journalEntry: account }).rpc(), // Ensure this matches the expected account structure
+    mutationFn: (title: string) => program.methods.deleteEntry(title).accounts({
+      journalEntry: account
+    }).rpc(), // Ensure this matches the expected account structure
     onSuccess: (tx) => {
       transactionToast(tx)
       return accounts.refetch()
