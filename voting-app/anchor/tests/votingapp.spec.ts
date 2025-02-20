@@ -1,76 +1,73 @@
 import * as anchor from '@coral-xyz/anchor'
-import {Program} from '@coral-xyz/anchor'
-import {Keypair} from '@solana/web3.js'
-import {Votingapp} from '../target/types/votingapp'
+import { Program } from '@coral-xyz/anchor'
+import { Keypair, PublicKey } from '@solana/web3.js'
+import { Voting } from '../target/types/voting'
+import { BankrunProvider, startAnchor } from "anchor-bankrun";
+const IDL = require('../target/idl/voting.json'); //defining the IDL
 
-describe('votingapp', () => {
-  // Configure the client to use the local cluster.
-  const provider = anchor.AnchorProvider.env()
-  anchor.setProvider(provider)
-  const payer = provider.wallet as anchor.Wallet
+const votingAddress = new PublicKey("coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF");
 
-  const program = anchor.workspace.Votingapp as Program<Votingapp>
+describe('Create a system account', () => {
 
-  const votingappKeypair = Keypair.generate()
+  test("bankrun", async () => {
+    const context = await startAnchor("", [{ name: "voting", programId: votingAddress }], []);
+    const provider = new BankrunProvider(context);
 
-  it('Initialize Votingapp', async () => {
-    await program.methods
-      .initialize()
-      .accounts({
-        votingapp: votingappKeypair.publicKey,
-        payer: payer.publicKey,
-      })
-      .signers([votingappKeypair])
-      .rpc()
+    const puppetProgram = new Program<Voting>(
+      IDL,
+      provider,
+    );
 
-    const currentCount = await program.account.votingapp.fetch(votingappKeypair.publicKey)
+    const [pollAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("poll"), new anchor.BN(1).toArrayLike(Buffer, "le", 8)],
+      puppetProgram.programId
+    );
 
-    expect(currentCount.count).toEqual(0)
-  })
+    await puppetProgram.methods.initializePoll(
+      new anchor.BN(1),
+      new anchor.BN(0),
+      new anchor.BN(1759508293),
+      "test-poll",
+      "description",
+    ).rpc();
 
-  it('Increment Votingapp', async () => {
-    await program.methods.increment().accounts({ votingapp: votingappKeypair.publicKey }).rpc()
+    const pollAccount = await puppetProgram.account.pollAccount.fetch(pollAddress);
+    console.log(pollAccount);
+  });
 
-    const currentCount = await program.account.votingapp.fetch(votingappKeypair.publicKey)
+});
 
-    expect(currentCount.count).toEqual(1)
-  })
+describe('Initialize candidates', () => {
+  it("initialize candidate", async () => {
+    const context = await startAnchor("", [{ name: "voting", programId: votingAddress }], []);
+    const provider = new BankrunProvider(context);
 
-  it('Increment Votingapp Again', async () => {
-    await program.methods.increment().accounts({ votingapp: votingappKeypair.publicKey }).rpc()
+    const program = new Program<Voting>(
+      IDL,
+      provider,
+    );
 
-    const currentCount = await program.account.votingapp.fetch(votingappKeypair.publicKey)
+    const [pollAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("poll"), new anchor.BN(1).toArrayLike(Buffer, "le", 8)],
+      program.programId
+    );
 
-    expect(currentCount.count).toEqual(2)
-  })
+    const smoothTx = await program.methods.initializeCandidate(
+      new anchor.BN(1),
+      "smooth",
+    ).accounts({
+      pollAccount: pollAddress
+    })
+    .rpc();
 
-  it('Decrement Votingapp', async () => {
-    await program.methods.decrement().accounts({ votingapp: votingappKeypair.publicKey }).rpc()
+    const crunchyTx = await program.methods.initializeCandidate(
+      new anchor.BN(1),
+      "crunchy",
+    ).accounts({
+      pollAccount: pollAddress
+    })
+    .rpc();
 
-    const currentCount = await program.account.votingapp.fetch(votingappKeypair.publicKey)
-
-    expect(currentCount.count).toEqual(1)
-  })
-
-  it('Set votingapp value', async () => {
-    await program.methods.set(42).accounts({ votingapp: votingappKeypair.publicKey }).rpc()
-
-    const currentCount = await program.account.votingapp.fetch(votingappKeypair.publicKey)
-
-    expect(currentCount.count).toEqual(42)
-  })
-
-  it('Set close the votingapp account', async () => {
-    await program.methods
-      .close()
-      .accounts({
-        payer: payer.publicKey,
-        votingapp: votingappKeypair.publicKey,
-      })
-      .rpc()
-
-    // The account should no longer exist, returning null.
-    const userAccount = await program.account.votingapp.fetchNullable(votingappKeypair.publicKey)
-    expect(userAccount).toBeNull()
-  })
-})
+    console.log('Candidates initialized successfully');
+  });
+});

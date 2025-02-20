@@ -18,6 +18,7 @@ pub mod voting {
         ctx.accounts.poll_account.poll_description = description;
         ctx.accounts.poll_account.poll_voting_start = start_time;
         ctx.accounts.poll_account.poll_voting_end = end_time;
+        ctx.accounts.poll_account.poll_option_index = 0; // Initialize option index
         Ok(())
     }
 
@@ -45,7 +46,6 @@ pub mod voting {
 
         Ok(())
     }
-    
 }
 
 #[derive(Accounts)]
@@ -116,7 +116,7 @@ pub struct CandidateAccount {
 
 #[account]
 #[derive(InitSpace)]
-pub struct PollAccount{
+pub struct PollAccount {
     #[max_len(32)]
     pub poll_name: String,
     #[max_len(280)]

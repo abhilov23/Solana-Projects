@@ -1,11 +1,11 @@
 // Here we export some useful types and functions for interacting with the Anchor program.
 import { AnchorProvider, Program } from '@coral-xyz/anchor'
 import { Cluster, PublicKey } from '@solana/web3.js'
-import VotingappIDL from '../target/idl/votingapp.json'
-import type { Votingapp } from '../target/types/votingapp'
+import VotingappIDL from '../target/idl/voting.json'
+import type { Voting } from '../target/types/voting'
 
 // Re-export the generated IDL and type
-export { Votingapp, VotingappIDL }
+export { Voting, VotingappIDL }
 
 // The programId is imported from the program IDL.
 export const VOTINGAPP_PROGRAM_ID = new PublicKey(VotingappIDL.address)
