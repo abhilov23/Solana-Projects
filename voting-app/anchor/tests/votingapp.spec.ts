@@ -5,7 +5,7 @@ import { Voting } from '../target/types/voting'
 import { BankrunProvider, startAnchor } from "anchor-bankrun";
 const IDL = require('../target/idl/voting.json'); //defining the IDL
 
-const votingAddress = new PublicKey("coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF");
+const votingAddress = new PublicKey("KFsvLXCXXrm1PuSYGbnqHDcoUt19aX5nh6bAD6pVfK1");
 
 describe('Create a system account', () => {
 

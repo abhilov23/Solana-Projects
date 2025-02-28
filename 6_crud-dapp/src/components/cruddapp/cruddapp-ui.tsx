@@ -1,17 +1,17 @@
-'use client'
+"use client";
 
-import { PublicKey } from '@solana/web3.js'
-import { useState } from 'react'
-import { ellipsify } from '../ui/ui-layout'
-import { ExplorerLink } from '../cluster/cluster-ui'
-import { useCruddappProgram, useCruddappProgramAccount } from './cruddapp-data-access'
-import { useWallet } from '@solana/wallet-adapter-react'
+import { PublicKey } from "@solana/web3.js";
+import { useState } from "react";
+import { ellipsify } from "../ui/ui-layout";
+import { ExplorerLink } from "../cluster/cluster-ui";
+import { useCruddappProgram, useCruddappProgramAccount } from "./cruddapp-data-access";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 export function CruddappCreate() {
-  const { createEntry } = useCruddappProgram()
+  const { createEntry } = useCruddappProgram();
   const { publicKey } = useWallet();
-  const [title, setTitle] = useState("")
-  const [message, setMessage] = useState("")
+  const [title, setTitle] = useState("");
+  const [message, setMessage] = useState("");
 
   const isFormValid = title.trim() !== "" && message.trim() !== "";
 
@@ -23,57 +23,57 @@ export function CruddappCreate() {
         console.error("Error creating entry:", error);
       }
     }
-  }
+  };
 
   if (!publicKey) {
     return (
       <div className="alert alert-info flex justify-center">
         <span>Please connect to a wallet to create entries.</span>
       </div>
-    )
+    );
   }
 
   return (
     <div className="flex flex-col items-center space-y-4">
       <input
-        type='text'
-        placeholder='Title'
+        type="text"
+        placeholder="Title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        className='input input-bordered w-full max-w-xs'
+        className="input input-bordered w-full max-w-xs"
       />
       <textarea
-        placeholder='Message'
+        placeholder="Message"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
-        className='textarea input-bordered w-full max-w-xs h-32'
+        className="textarea input-bordered w-full max-w-xs h-32"
       />
       <button
         className="btn btn-md btn-primary"
         onClick={handleSubmit}
         disabled={createEntry.isPending || !isFormValid}
       >
-        Create {createEntry.isPending && '...'}
+        Create {createEntry.isPending && "..."}
       </button>
     </div>
-  )
+  );
 }
 
 export function CruddappList() {
-  const { accounts, getProgramAccount } = useCruddappProgram()
+  const { accounts, getProgramAccount } = useCruddappProgram();
 
   if (getProgramAccount.isLoading) {
-    return <span className="loading loading-spinner loading-lg"></span>
+    return <span className="loading loading-spinner loading-lg"></span>;
   }
   if (!getProgramAccount.data?.value) {
     return (
       <div className="alert alert-info flex justify-center">
         <span>Program account not found. Make sure you have deployed the program and are on the correct cluster.</span>
       </div>
-    )
+    );
   }
   return (
-    <div className='space-y-6'>
+    <div className="space-y-6">
       {accounts.isLoading ? (
         <span className="loading loading-spinner loading-lg"></span>
       ) : accounts.data?.length ? (
@@ -84,20 +84,19 @@ export function CruddappList() {
         </div>
       ) : (
         <div className="text-center">
-          <h2 className='text-2xl'>No accounts</h2>
+          <h2 className="text-2xl">No accounts</h2>
           <p>No accounts found. Create one above to get started.</p>
         </div>
       )}
     </div>
-  )
+  );
 }
 
 function CruddappCard({ account }: { account: PublicKey }) {
-  const { accountQuery, updateEntry, deleteEntry } = useCruddappProgramAccount({ account })
-
+  const { accountQuery, updateEntry, deleteEntry } = useCruddappProgramAccount({ account });
   const { publicKey } = useWallet();
-  const [message, setMessage] = useState("")
-  const title = accountQuery.data?.title;
+  const [message, setMessage] = useState("");
+  const title = accountQuery.data?.title; // This can be undefined if not loaded
 
   const isFormValid = message.trim() !== "";
 
@@ -109,14 +108,27 @@ function CruddappCard({ account }: { account: PublicKey }) {
         console.error("Error updating entry:", error);
       }
     }
-  }
+  };
+
+  const handleDelete = () => {
+    if (publicKey && title && typeof title === "string") {
+      if (window.confirm("Are you sure you want to delete this entry?")) {
+        deleteEntry.mutateAsync({ title, owner: publicKey }).catch((error) => {
+          console.error("Error deleting entry:", error);
+        });
+      }
+    } else {
+      console.warn("Delete aborted: Title is invalid or publicKey is missing");
+      toast.error("Cannot delete: Title is invalid or wallet not connected.");
+    }
+  };
 
   if (!publicKey) {
     return (
       <div className="alert alert-info flex justify-center">
-        <span>Please connect to a wallet to create entries.</span>
+        <span>Please connect to a wallet to manage entries.</span>
       </div>
-    )
+    );
   }
 
   return accountQuery.isLoading ? (
@@ -126,22 +138,22 @@ function CruddappCard({ account }: { account: PublicKey }) {
       <div className="card-body items-center text-center">
         <div className="space-y-4">
           <h2 className="card-title text-3xl cursor-pointer" onClick={() => accountQuery.refetch()}>
-            {accountQuery.data?.title}
+            {accountQuery.data?.title || "Untitled"}
           </h2>
-          <p>{accountQuery.data?.message}</p>
+          <p>{accountQuery.data?.message || "No message"}</p>
           <div className="card-actions flex flex-col items-center">
             <textarea
-              placeholder='New Message'
+              placeholder="New Message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className='textarea input-bordered w-full max-w-xs h-32'
+              className="textarea input-bordered w-full max-w-xs h-32"
             />
             <button
               className="btn btn-md btn-primary mt-2"
               onClick={handleSubmit}
               disabled={updateEntry.isPending || !isFormValid}
             >
-              Update {updateEntry.isPending && '...'}
+              Update {updateEntry.isPending && "..."}
             </button>
           </div>
           <div className="text-center space-y-4">
@@ -150,16 +162,8 @@ function CruddappCard({ account }: { account: PublicKey }) {
             </p>
             <button
               className="btn btn-xs btn-secondary btn-outline"
-              onClick={() => {
-                if (!window.confirm('Are you sure you want to close this account?')) {
-                  return
-                }
-                const title = accountQuery.data?.title;
-                if (title) {
-                  deleteEntry.mutateAsync(title).catch(error => console.error("Error deleting entry:", error));
-                }
-              }}
-              disabled={deleteEntry.isPending}
+              onClick={handleDelete}
+              disabled={deleteEntry.isPending || !title || typeof title !== "string"}
             >
               Delete
             </button>
@@ -167,5 +171,5 @@ function CruddappCard({ account }: { account: PublicKey }) {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 import { useCluster } from '../cluster/cluster-data-access'
 import { useAnchorProvider } from '../solana/solana-provider'
 import { useTransactionToast } from '../ui/ui-layout'
+import * as anchor from '@project-serum/anchor'
 
 interface EntryArgs {
   owner: PublicKey,
@@ -42,14 +43,16 @@ export function useCruddappProgram() {
         programId,
       );
       return program.methods.createEntry(title, message).accounts({
-        journalEntry: journalEntryAddress, // Ensure this matches the expected account structure
+        journalEntry: journalEntryAddress,
+        owner,
+        systemProgram: anchor.web3.SystemProgram.programId,
       }).rpc();
     },
     onSuccess: (signature) => {
       transactionToast(signature)
       return accounts.refetch()
     },
-    onError: () => toast.error('Failed to initialize account'),
+    onError: () => toast.error('Failed to create entry'),
   })
 
   return {
@@ -68,7 +71,7 @@ export function useCruddappProgramAccount({ account }: { account: PublicKey }) {
 
   const accountQuery = useQuery({
     queryKey: ['cruddapp', 'fetch', { cluster, account }],
-    queryFn: () => program.account.journalEntryState.fetch(account), // Ensure this matches the correct account type
+    queryFn: () => program.account.journalEntryState.fetch(account),
   })
 
   const updateEntry = useMutation<string, Error, EntryArgs>({
@@ -78,32 +81,40 @@ export function useCruddappProgramAccount({ account }: { account: PublicKey }) {
         [Buffer.from(title), owner.toBuffer()],
         programId,
       );
-
       return program.methods.updateEntry(title, message).accounts({
-        journalEntry: journalEntryAddress
+        journalEntry: journalEntryAddress,
+        owner,
+        systemProgram: anchor.web3.SystemProgram.programId,
       }).rpc();
     },
     onSuccess: (signature) => {
       transactionToast(signature)
       return accounts.refetch()
     },
-    onError: () => toast.error('Failed to initialize account'),
+    onError: () => toast.error('Failed to update entry'),
   })
-
 
   const deleteEntry = useMutation({
     mutationKey: ['cruddapp', 'delete', { cluster, account }],
-    mutationFn: (title: string) => program.methods.deleteEntry(title).accounts({
-      journalEntry: account
-    }).rpc(), // Ensure this matches the expected account structure
+    mutationFn: async ({ title, owner }: { title: string; owner: PublicKey }) => {
+      const [journalEntryAddress] = await PublicKey.findProgramAddress(
+        [Buffer.from(title), owner.toBuffer()],
+        programId,
+      );
+      return program.methods.deleteEntry(title).accounts({
+        journalEntry: journalEntryAddress,
+        owner,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      }).rpc();
+    },
     onSuccess: (tx) => {
       transactionToast(tx)
       return accounts.refetch()
     },
+    onError: () => toast.error('Failed to delete entry'),
   })
-   
 
-    return {
+  return {
     accountQuery,
     updateEntry,
     deleteEntry,
