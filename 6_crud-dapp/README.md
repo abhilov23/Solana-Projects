@@ -1,94 +1,63 @@
-# crud-dapp
+# cruddapp - Solana CRUD Application
 
-## Getting Started
+Welcome to `cruddapp`, a decentralized CRUD (Create, Read, Update, Delete) application built on the Solana blockchain using Anchor. This project demonstrates a simple journal entry system where users can create, update, and delete entries stored on-chain, with each entry tied to a Program Derived Address (PDA) based on a title and owner. It serves as a learning tool for Solana development and can be extended for real-world use cases like logging or data management.
 
-### Prerequisites
+---
 
-- Node v18.18.0 or higher
+## Table of Contents
+- [Overview](#overview)
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Project Structure](#project-structure)
+- [Development](#development)
+- [Security](#security)
+- [Contributing](#contributing)
+- [License](#license)
+- [Contact](#contact)
 
-- Rust v1.77.2 or higher
-- Anchor CLI 0.30.1 or higher
-- Solana CLI 1.18.17 or higher
+---
 
-### Installation
+## Overview
+`cruddapp` is a Solana program written in Rust with Anchor, providing a TypeScript/JavaScript interface for frontend integration. It uses PDAs to uniquely identify journal entries based on a title and owner public key. The frontend leverages React hooks with `@tanstack/react-query` for state management and `@solana/wallet-adapter-react` for wallet interactions, though it can be adapted to use stored keys for signing.
 
-#### Clone the repo
+This project is ideal for developers learning Anchor, Solana program development, and frontend integration, with a focus on on-chain data persistence.
 
-```shell
-git clone <repo-url>
-cd <repo-name>
-```
+---
 
-#### Install Dependencies
+## Features
+- **Create Entries**: Store new journal entries with a title and message, linked to the owner’s public key.
+- **Read Entries**: Fetch all or specific journal entries stored on-chain.
+- **Update Entries**: Modify the message of an existing entry.
+- **Delete Entries**: Remove entries from the blockchain.
+- **PDA-based Storage**: Uses Program Derived Addresses for unique entry identification.
+- **React Integration**: Provides custom hooks for querying and mutating data.
 
-```shell
-pnpm install
-```
+---
 
-#### Start the web app
+## Prerequisites
+Before you begin, ensure you have the following installed:
+- **Node.js** (v16 or higher)
+- **npm** or **yarn**
+- **Git** (for cloning the repository)
+- **Rust** (for building the Anchor program)
+- **Solana CLI** (for deploying and interacting with the program)
+- **Anchor CLI** (`anchor` package)
 
-```
-pnpm dev
-```
+Required dependencies:
+- `@project-serum/anchor`
+- `@solana/web3.js`
+- `@tanstack/react-query`
+- `react`
+- `react-dom`
+- `react-hot-toast`
+- `axios` (optional, for server-side signing)
 
-## Apps
+---
 
-### anchor
-
-This is a Solana program written in Rust using the Anchor framework.
-
-#### Commands
-
-You can use any normal anchor commands. Either move to the `anchor` directory and run the `anchor` command or prefix the command with `pnpm`, eg: `pnpm anchor`.
-
-#### Sync the program id:
-
-Running this command will create a new keypair in the `anchor/target/deploy` directory and save the address to the Anchor config file and update the `declare_id!` macro in the `./src/lib.rs` file of the program.
-
-You will manually need to update the constant in `anchor/lib/counter-exports.ts` to match the new program id.
-
-```shell
-pnpm anchor keys sync
-```
-
-#### Build the program:
-
-```shell
-pnpm anchor-build
-```
-
-#### Start the test validator with the program deployed:
-
-```shell
-pnpm anchor-localnet
-```
-
-#### Run the tests
-
-```shell
-pnpm anchor-test
-```
-
-#### Deploy to Devnet
-
-```shell
-pnpm anchor deploy --provider.cluster devnet
-```
-
-### web
-
-This is a React app that uses the Anchor generated client to interact with the Solana program.
-
-#### Commands
-
-Start the web app
-
-```shell
-pnpm dev
-```
-
-Build the web app
-
-```shell
-pnpm build
-```
+## Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-username/cruddapp.git
+   cd cruddapp
