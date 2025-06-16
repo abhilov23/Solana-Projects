@@ -12,6 +12,8 @@
   "description": "",
   "dependencies": {
     "@metaplex-foundation/js": "^0.20.1",
-    "@solana/web3.js": "2.0.0"
+    "@solana/web3.js": "^2.0.0",
+    "fs": "^0.0.1-security",
+    "path": "^0.12.7"
   }
 }
