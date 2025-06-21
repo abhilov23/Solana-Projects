@@ -56,8 +56,8 @@ async function main() {
     });
     console.log("Explorer link:", explorerLink);
 
-    // Send and confirm the transaction
     console.log("Sending transaction...");
+        // Send and confirm the transaction
     await sendAndConfirmTransaction(signedTx, {
       commitment: "confirmed",
       skipPreflight: false
@@ -73,5 +73,4 @@ async function main() {
   }
 }
 
-// Run the main function
 main().catch(console.error);
