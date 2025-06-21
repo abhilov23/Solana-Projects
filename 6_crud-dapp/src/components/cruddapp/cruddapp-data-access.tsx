@@ -12,9 +12,22 @@ import { useTransactionToast } from '../ui/ui-layout'
 import * as anchor from '@project-serum/anchor'
 
 interface EntryArgs {
-  owner: PublicKey,
-  title: string,
-  message: string,
+  owner: PublicKey
+  title: string
+  message: string
+}
+
+interface DeleteEntryArgs {
+  title: string
+  owner: PublicKey
+}
+
+// Add type for journal entry state
+interface JournalEntryState {
+  owner: PublicKey
+  title: string
+  message: string
+  entryId: anchor.BN
 }
 
 export function useCruddappProgram() {
@@ -28,31 +41,68 @@ export function useCruddappProgram() {
   const accounts = useQuery({
     queryKey: ['cruddapp', 'all', { cluster }],
     queryFn: () => program.account.journalEntryState.all(),
+    retry: (failureCount, error) => {
+      // Don't retry if it's a program account not found error
+      if (error?.message?.includes('Account does not exist')) {
+        return false
+      }
+      return failureCount < 3
+    },
   })
 
   const getProgramAccount = useQuery({
     queryKey: ['get-program-account', { cluster }],
     queryFn: () => connection.getParsedAccountInfo(programId),
+    retry: 2,
   })
 
   const createEntry = useMutation<string, Error, EntryArgs>({
     mutationKey: ['cruddapp', 'create', { cluster }],
     mutationFn: async ({ title, message, owner }) => {
-      const [journalEntryAddress] = await PublicKey.findProgramAddress(
-        [Buffer.from(title), owner.toBuffer()],
-        programId,
-      );
-      return program.methods.createEntry(title, message).accounts({
-        journalEntry: journalEntryAddress,
-        owner,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      }).rpc();
+      // Input validation
+      if (!title.trim()) {
+        throw new Error('Title cannot be empty')
+      }
+      if (!message.trim()) {
+        throw new Error('Message cannot be empty')
+      }
+      if (title.length > 50) {
+        throw new Error('Title must be 50 characters or less')
+      }
+      if (message.length > 500) {
+        throw new Error('Message must be 500 characters or less')
+      }
+
+      try {
+        const [journalEntryAddress] = await PublicKey.findProgramAddress(
+          [Buffer.from(title.trim()), owner.toBuffer()],
+          programId,
+        )
+
+        return program.methods
+          .createEntry(title.trim(), message.trim())
+          .accounts({
+            journalEntry: journalEntryAddress,
+            owner,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          })
+          .rpc()
+      } catch (error) {
+        if (error?.message?.includes('already in use')) {
+          throw new Error('An entry with this title already exists')
+        }
+        throw error
+      }
     },
     onSuccess: (signature) => {
       transactionToast(signature)
-      return accounts.refetch()
+      accounts.refetch()
+      toast.success('Entry created successfully!')
     },
-    onError: () => toast.error('Failed to create entry'),
+    onError: (error) => {
+      console.error('Create entry error:', error)
+      toast.error(error.message || 'Failed to create entry')
+    },
   })
 
   return {
@@ -67,51 +117,105 @@ export function useCruddappProgram() {
 export function useCruddappProgramAccount({ account }: { account: PublicKey }) {
   const { cluster } = useCluster()
   const transactionToast = useTransactionToast()
-  const { programId , program, accounts } = useCruddappProgram()
+  const { programId, program, accounts } = useCruddappProgram()
 
   const accountQuery = useQuery({
-    queryKey: ['cruddapp', 'fetch', { cluster, account }],
+    queryKey: ['cruddapp', 'fetch', { cluster, account: account.toString() }],
     queryFn: () => program.account.journalEntryState.fetch(account),
+    retry: (failureCount, error) => {
+      if (error?.message?.includes('Account does not exist')) {
+        return false
+      }
+      return failureCount < 2
+    },
+    enabled: !!account,
   })
 
   const updateEntry = useMutation<string, Error, EntryArgs>({
-    mutationKey: ['cruddapp', 'update', { cluster }],
+    mutationKey: ['cruddapp', 'update', { cluster, account: account.toString() }],
     mutationFn: async ({ title, message, owner }) => {
-      const [journalEntryAddress] = await PublicKey.findProgramAddress(
-        [Buffer.from(title), owner.toBuffer()],
-        programId,
-      );
-      return program.methods.updateEntry(title, message).accounts({
-        journalEntry: journalEntryAddress,
-        owner,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      }).rpc();
+      // Input validation
+      if (!title.trim()) {
+        throw new Error('Title cannot be empty')
+      }
+      if (!message.trim()) {
+        throw new Error('Message cannot be empty')
+      }
+      if (message.length > 500) {
+        throw new Error('Message must be 500 characters or less')
+      }
+
+      try {
+        const [journalEntryAddress] = await PublicKey.findProgramAddress(
+          [Buffer.from(title.trim()), owner.toBuffer()],
+          programId,
+        )
+
+        return program.methods
+          .updateEntry(title.trim(), message.trim())
+          .accounts({
+            journalEntry: journalEntryAddress,
+            owner,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          })
+          .rpc()
+      } catch (error) {
+        if (error?.message?.includes('Account does not exist')) {
+          throw new Error('Entry not found')
+        }
+        throw error
+      }
     },
     onSuccess: (signature) => {
       transactionToast(signature)
-      return accounts.refetch()
+      accountQuery.refetch()
+      accounts.refetch()
+      toast.success('Entry updated successfully!')
     },
-    onError: () => toast.error('Failed to update entry'),
+    onError: (error) => {
+      console.error('Update entry error:', error)
+      toast.error(error.message || 'Failed to update entry')
+    },
   })
 
-  const deleteEntry = useMutation({
-    mutationKey: ['cruddapp', 'delete', { cluster, account }],
-    mutationFn: async ({ title, owner }: { title: string; owner: PublicKey }) => {
-      const [journalEntryAddress] = await PublicKey.findProgramAddress(
-        [Buffer.from(title), owner.toBuffer()],
-        programId,
-      );
-      return program.methods.deleteEntry(title).accounts({
-        journalEntry: journalEntryAddress,
-        owner,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      }).rpc();
+  const deleteEntry = useMutation<string, Error, DeleteEntryArgs>({
+    mutationKey: ['cruddapp', 'delete', { cluster, account: account.toString() }],
+    mutationFn: async ({ title, owner }) => {
+      if (!title.trim()) {
+        throw new Error('Title cannot be empty')
+      }
+
+      try {
+        const [journalEntryAddress] = await PublicKey.findProgramAddress(
+          [Buffer.from(title.trim()), owner.toBuffer()],
+          programId,
+        )
+
+        // The IDL shows the parameter name is "_title" not "title"
+        return program.methods
+          .deleteEntry(title.trim())
+          .accounts({
+            journalEntry: journalEntryAddress,
+            owner,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          })
+          .rpc()
+      } catch (error) {
+        if (error?.message?.includes('Account does not exist')) {
+          throw new Error('Entry not found')
+        }
+        throw error
+      }
     },
-    onSuccess: (tx) => {
-      transactionToast(tx)
-      return accounts.refetch()
+    onSuccess: (signature) => {
+      transactionToast(signature)
+      accounts.refetch()
+      toast.success('Entry deleted successfully!')
     },
-    onError: () => toast.error('Failed to delete entry'),
+    onError: (error) => {
+      console.error('Delete entry error:', error)
+      toast.error(error.message || 'Failed to delete entry')
+    },
   })
 
   return {
